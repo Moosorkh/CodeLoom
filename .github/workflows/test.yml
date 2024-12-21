@@ -13,21 +13,32 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 16
+        cache: 'npm'
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
 
     - name: Install Dependencies
-      run: npm install
+      run: npm ci
 
     - name: Start Server
       run: npm run develop &
       env:
         MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        NODE_ENV: test
 
     - name: Wait for Server
-      run: npx wait-on http://localhost:3000
+      run: npx wait-on --timeout 60000 http://localhost:3000
 
     - name: Run Cypress Tests
-      run: npm run test-gui
+      run: npm run test-ci
+      env:
+        CYPRESS_BASE_URL: http://localhost:3000

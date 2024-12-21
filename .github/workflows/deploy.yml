@@ -8,22 +8,33 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: 16
+        cache: 'npm'
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
 
     - name: Install Dependencies
-      run: npm install
+      run: npm ci
 
     - name: Build the Project
       run: npm run build
+      env:
+        NODE_ENV: production
 
     - name: Deploy to Render
-      run: |
-        curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      env:
+        NODE_ENV: production
