@@ -22,23 +22,32 @@ jobs:
     - name: Cache dependencies
       uses: actions/cache@v3
       with:
-        path: ~/.npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
+        path: |
+          ~/.npm
+          node_modules
+          */node_modules
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
 
     - name: Install Dependencies
-      run: npm ci
+      run: npm run install
 
-    - name: Start Server
+    - name: Build Server
+      run: cd server && npm run build
+
+    - name: Start Development Servers
       run: npm run develop &
       env:
         MONGODB_URI: ${{ secrets.MONGODB_URI }}
         NODE_ENV: test
 
-    - name: Wait for Server
-      run: npx wait-on --timeout 60000 http://localhost:3000
+    - name: Wait for Servers
+      run: |
+        npx wait-on --timeout 60000 http://localhost:3000
+        npx wait-on --timeout 60000 http://localhost:5173
 
     - name: Run Cypress Tests
-      run: npm run test-ci
+      run: npm run test
       env:
-        CYPRESS_BASE_URL: http://localhost:3000
+        CYPRESS_BASE_URL: http://localhost:5173
